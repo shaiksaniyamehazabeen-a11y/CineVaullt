@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import "./App.css";
 
 import DashboardLayout from "./layouts/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Dashboard from "./pages/Dashboard";
 import Browse from "./pages/Browse";
@@ -9,54 +9,37 @@ import ItemDetail from "./pages/ItemDetail";
 import AddItem from "./pages/AddItem";
 import Saved from "./pages/Saved";
 
-import ProtectedRoute from "./components/ProtectedRoute";
-import { Toaster } from "./components/ui/sonner";
-
 function App() {
   return (
-    <>
-      <Toaster />
+    <Routes>
+      {/* Main application layout */}
+      <Route element={<DashboardLayout />}>
+        {/* Dashboard must open at / */}
+        <Route path="/" element={<Dashboard />} />
 
-      <Routes>
-        <Route element={<DashboardLayout />}>
-          <Route
-            path="/"
-            element={<Dashboard />}
-          />
+        {/* Browse movies */}
+        <Route path="/browse" element={<Browse />} />
 
-          <Route
-            path="/browse"
-            element={<Browse />}
-          />
+        {/* Movie details */}
+        <Route path="/browse/:id" element={<ItemDetail />} />
 
-          <Route
-            path="/browse/:id"
-            element={<ItemDetail />}
-          />
+        {/* Add movie form */}
+        <Route path="/add" element={<AddItem />} />
 
-          <Route
-            path="/add"
-            element={<AddItem />}
-          />
+        {/* Protected saved movies page */}
+        <Route
+          path="/saved"
+          element={
+            <ProtectedRoute>
+              <Saved />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/saved"
-            element={
-              <ProtectedRoute>
-                <Saved />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="*"
-            element={
-              <Navigate to="/" replace />
-            }
-          />
-        </Route>
-      </Routes>
-    </>
+        {/* Unknown URLs go to Dashboard */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   );
 }
 

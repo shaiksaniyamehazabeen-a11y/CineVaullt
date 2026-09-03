@@ -5,10 +5,13 @@ export const itemSchema = z.object({
 
   image: z
     .string()
-    .url("Enter a valid image URL")
+    .url("Please enter a valid image URL")
+    .optional()
     .or(z.literal("")),
 
-  summary: z.string().min(10, "Summary must be at least 10 characters"),
+  summary: z
+    .string()
+    .min(10, "Summary must be at least 10 characters"),
 
   rating: z
     .number()
