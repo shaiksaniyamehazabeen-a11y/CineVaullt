@@ -1,38 +1,27 @@
 import { z } from "zod";
 
 export const itemSchema = z.object({
-  name: z
-    .string()
-    .min(2, "Movie name must be at least 2 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
 
-  summary: z
+  image: z
     .string()
-    .min(10, "Summary must be at least 10 characters"),
+    .url("Enter a valid image URL")
+    .or(z.literal("")),
+
+  summary: z.string().min(10, "Summary must be at least 10 characters"),
 
   rating: z
     .number()
-    .min(0, "Rating cannot be below 0")
-    .max(10, "Rating cannot be above 10"),
+    .min(0, "Rating cannot be negative")
+    .max(10, "Rating cannot exceed 10"),
 
-  language: z
-    .string()
-    .min(2, "Language is required"),
+  language: z.string().min(2, "Language is required"),
 
-  status: z.enum([
-    "watched",
-    "watching",
-    "planned",
-  ]),
+  status: z.enum(["watched", "watching", "planned"]),
 
-  genres: z
-    .string()
-    .min(2, "Please enter at least one genre"),
+  genres: z.string().min(2, "Enter at least one genre"),
 
-  premiered: z
-    .string()
-    .optional(),
+  premiered: z.string().optional(),
 });
 
-export type ItemForm = z.infer<
-  typeof itemSchema
->;
+export type ItemForm = z.infer<typeof itemSchema>;

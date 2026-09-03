@@ -874,3 +874,18 @@ footer {
     height: 240px;
   }
 }
+
+.image-preview {
+  width: 160px;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.form-help {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 6px;
+}

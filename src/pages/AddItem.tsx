@@ -1,42 +1,33 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-import {
-  itemSchema,
-  type ItemForm,
-} from "../schemas/itemSchema";
-
+import { itemSchema, type ItemForm } from "../schemas/itemSchema";
+import type { Movie } from "../types/movie.types";
 import { useMovieStore } from "../store/movieStore";
 import { useSavedStore } from "../store/savedStore";
-
-import type { Movie } from "../types/movie.types";
 
 function AddItem() {
   const navigate = useNavigate();
 
-  const addMovie = useMovieStore(
-    (state) => state.addMovie
-  );
+  const addMovie = useMovieStore((state) => state.addMovie);
+  const saveItem = useSavedStore((state) => state.saveItem);
 
-  const saveItem = useSavedStore(
-    (state) => state.saveItem
-  );
+  const [imagePreview, setImagePreview] = useState("");
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: {
-      errors,
-      isSubmitting,
-    },
+    watch,
+    formState: { errors, isSubmitting },
   } = useForm<ItemForm>({
     resolver: zodResolver(itemSchema),
-
     defaultValues: {
       name: "",
+      image: "",
       summary: "",
       rating: 0,
       language: "",
@@ -46,299 +37,238 @@ function AddItem() {
     },
   });
 
+  const imageUrl = watch("image");
+
+  const handleImagePreview = () => {
+    setImagePreview(imageUrl || "");
+  };
+
   const onSubmit = async (data: ItemForm) => {
-    /*
-     * Omit<ItemForm, "id"> represents form data
-     * before an id is generated.
-     */
-    const formData: Omit<ItemForm, "id"> = data;
+    try {
+      // Mock POST request
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-    /*
-     * Mock POST request.
-     * In a real backend, this would be:
-     * await api.post("/shows", formData);
-     */
-    await new Promise((resolve) =>
-      setTimeout(resolve, 500)
-    );
+      const newMovie: Movie = {
+        id: Date.now(),
+        name: data.name.trim(),
+        image: data.image?.trim() || undefined,
+        summary: data.summary.trim(),
+        rating: data.rating,
+        language: data.language.trim(),
+        status: data.status,
+        genres: data.genres
+          .split(",")
+          .map((genre) => genre.trim())
+          .filter(Boolean),
+        premiered: data.premiered || undefined,
+      };
 
-    /*
-     * Convert form data into the Movie type.
-     */
-    const newMovie: Movie = {
-      id: Date.now(),
+      // Add movie to the movie store
+      addMovie(newMovie);
 
-      name: formData.name.trim(),
+      // Optimistically save the movie
+      saveItem(newMovie);
 
-      summary: formData.summary.trim(),
+      toast.success("Movie added successfully! 🎬");
 
-      rating: formData.rating,
+      reset();
+      setImagePreview("");
 
-      language: formData.language.trim(),
-
-      status: formData.status,
-
-      genres: formData.genres
-        .split(",")
-        .map((genre) => genre.trim())
-        .filter(Boolean),
-
-      premiered:
-        formData.premiered || undefined,
-    };
-
-    /*
-     * Optimistic update:
-     * Add the movie immediately to the local stores.
-     */
-    addMovie(newMovie);
-    saveItem(newMovie);
-
-    /*
-     * Show success notification.
-     */
-    toast.success("Movie added successfully!", {
-      description: `${newMovie.name} has been added to your saved movies.`,
-    });
-
-    /*
-     * Clear the form.
-     */
-    reset();
-
-    /*
-     * Navigate to Saved page.
-     */
-    navigate("/saved", { replace: true });
+      navigate("/saved");
+    } catch {
+      toast.error("Failed to add movie. Please try again.");
+    }
   };
 
   return (
-    <section className="mx-auto max-w-3xl space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">
-          Add Movie
-        </h1>
+    <main className="page-container">
+      <section className="form-page">
+        <div className="form-header">
+          <h1>Add Movie</h1>
+          <p>Add a new movie to your CineVault collection.</p>
+        </div>
 
-        <p className="mt-2 text-gray-500 dark:text-gray-400">
-          Add a new movie to CineVault.
-        </p>
-      </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="movie-form">
+          {/* Movie Name */}
+          <div className="form-group">
+            <label htmlFor="name">Movie Name *</label>
 
-      {/* Form */}
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="space-y-6 rounded-xl border bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-      >
-        {/* Movie Name */}
-        <div>
-          <label
-            htmlFor="name"
-            className="mb-2 block font-medium"
-          >
-            Movie Name
-          </label>
+            <input
+              id="name"
+              type="text"
+              placeholder="Enter movie name"
+              {...register("name")}
+            />
 
-          <input
-            id="name"
-            type="text"
-            {...register("name")}
-            placeholder="Enter movie name"
-            className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-          />
+            {errors.name && (
+              <p className="error-message">{errors.name.message}</p>
+            )}
+          </div>
 
-          {errors.name && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.name.message}
+          {/* Movie Image URL */}
+          <div className="form-group">
+            <label htmlFor="image">Movie Image URL</label>
+
+            <input
+              id="image"
+              type="url"
+              placeholder="https://example.com/movie-poster.jpg"
+              {...register("image")}
+              onBlur={handleImagePreview}
+            />
+
+            {errors.image && (
+              <p className="error-message">{errors.image.message}</p>
+            )}
+
+            <p className="form-help">
+              Paste a valid movie poster image URL.
             </p>
-          )}
-        </div>
 
-        {/* Summary */}
-        <div>
-          <label
-            htmlFor="summary"
-            className="mb-2 block font-medium"
-          >
-            Summary
-          </label>
+            {imagePreview && (
+              <img
+                src={imagePreview}
+                alt="Movie poster preview"
+                className="image-preview"
+                onError={() => setImagePreview("")}
+              />
+            )}
+          </div>
 
-          <textarea
-            id="summary"
-            {...register("summary")}
-            rows={4}
-            placeholder="Enter movie summary"
-            className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-          />
+          {/* Summary */}
+          <div className="form-group">
+            <label htmlFor="summary">Summary *</label>
 
-          {errors.summary && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.summary.message}
+            <textarea
+              id="summary"
+              rows={4}
+              placeholder="Enter movie summary"
+              {...register("summary")}
+            />
+
+            {errors.summary && (
+              <p className="error-message">{errors.summary.message}</p>
+            )}
+          </div>
+
+          {/* Rating */}
+          <div className="form-group">
+            <label htmlFor="rating">Rating *</label>
+
+            <input
+              id="rating"
+              type="number"
+              min="0"
+              max="10"
+              step="0.1"
+              {...register("rating", {
+                valueAsNumber: true,
+              })}
+            />
+
+            {errors.rating && (
+              <p className="error-message">{errors.rating.message}</p>
+            )}
+          </div>
+
+          {/* Language */}
+          <div className="form-group">
+            <label htmlFor="language">Language *</label>
+
+            <input
+              id="language"
+              type="text"
+              placeholder="Example: Telugu"
+              {...register("language")}
+            />
+
+            {errors.language && (
+              <p className="error-message">{errors.language.message}</p>
+            )}
+          </div>
+
+          {/* Status */}
+          <div className="form-group">
+            <label htmlFor="status">Status *</label>
+
+            <select id="status" {...register("status")}>
+              <option value="planned">Planned</option>
+              <option value="watching">Watching</option>
+              <option value="watched">Watched</option>
+            </select>
+
+            {errors.status && (
+              <p className="error-message">{errors.status.message}</p>
+            )}
+          </div>
+
+          {/* Genres */}
+          <div className="form-group">
+            <label htmlFor="genres">Genres *</label>
+
+            <input
+              id="genres"
+              type="text"
+              placeholder="Romance, Drama, Action"
+              {...register("genres")}
+            />
+
+            {errors.genres && (
+              <p className="error-message">{errors.genres.message}</p>
+            )}
+
+            <p className="form-help">
+              Separate multiple genres with commas.
             </p>
-          )}
-        </div>
+          </div>
 
-        {/* Rating */}
-        <div>
-          <label
-            htmlFor="rating"
-            className="mb-2 block font-medium"
-          >
-            Rating
-          </label>
+          {/* Premiered Date */}
+          <div className="form-group">
+            <label htmlFor="premiered">Premiered Date</label>
 
-          <input
-            id="rating"
-            type="number"
-            step="0.1"
-            min="0"
-            max="10"
-            {...register("rating", {
-              valueAsNumber: true,
-            })}
-            placeholder="0 - 10"
-            className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-          />
+            <input
+              id="premiered"
+              type="date"
+              {...register("premiered")}
+            />
 
-          {errors.rating && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.rating.message}
-            </p>
-          )}
-        </div>
+            {errors.premiered && (
+              <p className="error-message">{errors.premiered.message}</p>
+            )}
+          </div>
 
-        {/* Language */}
-        <div>
-          <label
-            htmlFor="language"
-            className="mb-2 block font-medium"
-          >
-            Language
-          </label>
+          {/* Buttons */}
+          <div className="form-actions">
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Adding Movie..." : "Add Movie"}
+            </button>
 
-          <input
-            id="language"
-            type="text"
-            {...register("language")}
-            placeholder="Example: English"
-            className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-          />
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => {
+                reset();
+                setImagePreview("");
+              }}
+            >
+              Clear Form
+            </button>
 
-          {errors.language && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.language.message}
-            </p>
-          )}
-        </div>
-
-        {/* Status */}
-        <div>
-          <label
-            htmlFor="status"
-            className="mb-2 block font-medium"
-          >
-            Status
-          </label>
-
-          <select
-            id="status"
-            {...register("status")}
-            className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-          >
-            <option value="planned">
-              Planned
-            </option>
-
-            <option value="watching">
-              Watching
-            </option>
-
-            <option value="watched">
-              Watched
-            </option>
-          </select>
-
-          {errors.status && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.status.message}
-            </p>
-          )}
-        </div>
-
-        {/* Genres */}
-        <div>
-          <label
-            htmlFor="genres"
-            className="mb-2 block font-medium"
-          >
-            Genres
-          </label>
-
-          <input
-            id="genres"
-            type="text"
-            {...register("genres")}
-            placeholder="Example: Drama, Action, Romance"
-            className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-          />
-
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Separate multiple genres with commas.
-          </p>
-
-          {errors.genres && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.genres.message}
-            </p>
-          )}
-        </div>
-
-        {/* Premiered */}
-        <div>
-          <label
-            htmlFor="premiered"
-            className="mb-2 block font-medium"
-          >
-            Premiered
-          </label>
-
-          <input
-            id="premiered"
-            type="date"
-            {...register("premiered")}
-            className="w-full rounded-lg border px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 dark:border-gray-600 dark:bg-gray-700"
-          />
-
-          {errors.premiered && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.premiered.message}
-            </p>
-          )}
-        </div>
-
-        {/* Buttons */}
-        <div className="flex gap-3">
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-lg bg-purple-600 px-6 py-3 font-medium text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSubmitting
-              ? "Adding Movie..."
-              : "Add Movie"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => reset()}
-            disabled={isSubmitting}
-            className="rounded-lg border px-6 py-3 font-medium hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-700"
-          >
-            Reset
-          </button>
-        </div>
-      </form>
-    </section>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => navigate("/saved")}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
   );
 }
 
